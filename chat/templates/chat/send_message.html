@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% load static %}  <!-- Add this line to load the 'static' tag library -->
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+}
+#emoji-picker {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr); /* Update this line to create seven columns */
+    gap: 5px;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    position: absolute;
+    z-index: 1000;
+    width: max-content;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.emoji {
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+
+.emoji:hover {
+    background-color: #f0f0f0;
+}
+
+.messages {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.message:hover {
+    background-color: #f8f8f8;
+    cursor: pointer;
+}
+
+.sent, .received {
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: block;
+    max-width: 80%;
+}
+
+.sent {
+    background-color: #dcf8c6;
+    margin-left: auto;
+    text-align: right;
+}
+
+.received {
+    background-color: #f1f0f0;
+    margin-right: auto;
+    text-align: left;
+}
+
+.messages small {
+    display: block;
+    color: #666;
+    margin-top: 8px;
+}
+
+form {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: start;
+}
+
+textarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    grid-column: 1 / -1;
+}
+
+input[type="submit"], .close-btn {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.close-btn {
+    background-color: #6c757d;
+    grid-column: 1 / -1;
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* Media Queries */
+@media only screen and (max-width: 768px) {
+    /* Adjust styles for smaller screens */
+    .messages {
+        max-height: 300px;
+    }
+}
+
+@media only screen and (max-width: 576px) {
+    /* Further adjustments for extra small screens */
+    .messages {
+        max-height: 200px;
+    }
+    .sent, .received {
+        max-width: 100%;
+    }
+}
+</style>
+<div style="display: flex;">
+    <!-- Profile List -->
+    <div style="flex: 1; border-right: 1px solid #ccc; max-width: 200px; overflow-y: auto;">
+        <h2>Profiles</h2>
+        <div style="padding: 10px;">
+            <form method="get" action="">
+                <input type="text" name="search" placeholder="Search users..." value="{{ search_query }}">
+            </form>
+        </div>
+
+        {% for profile in profiles %}
+            <div style="margin-bottom: 10px;">
+                <!-- Link to send a message to the user -->
+                <a href="{% url 'send_message' profile.user.id %}" style="text-decoration: none; color: black; display: flex; align-items: center;">
+                    <!-- Display the profile picture if it exists, else a default picture -->
+                    <img src="{% if profile.picture %}{{ profile.picture.url }}{% else %}{% static 'path/to/default/profile/picture.jpg' %}{% endif %}" alt="{{ profile.user.username }}" style="width: 60px; height: 60px; border-radius: 50%; margin-right: 10px;">
+                    <!-- Display the username -->
+                    <span>{{ profile.user.username }}</span>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Messages Area -->
+    <div style="flex: 3; padding: 10px;">
+        <h2>Conversation with {{ recipient.username }}</h2>
+        <div class="messages" id="chat-log" style="max-height: 400px; overflow-y: auto; margin-bottom: 10px;">
+            {% for message in messages %}
+                <div class="{% if message.sender == request.user %}sent{% else %}received{% endif %}" style="margin-bottom: 10px;">
+                    <p>{{ message.message }}</p>
+                    <small>{{ message.timestamp }}</small>
+                </div>
+            {% endfor %}
+        </div>
+        <div id="emoji-picker" class="show-emoji-picker" style="display: none;">
+            <span class="emoji">😀</span>
+            <span class="emoji">😂</span>
+            <span class="emoji">😍</span>
+            <span class="emoji">😊</span>
+            <span class="emoji">😢</span>
+            <span class="emoji">😭</span>
+            <span class="emoji">😎</span>
+            <span class="emoji">😮</span>
+            <span class="emoji">😴</span>
+            <span class="emoji">🤔</span>
+            <span class="emoji">😬</span>
+            <span class="emoji">🥳</span>
+            <span class="emoji">😡</span>
+            <span class="emoji">🥺</span>
+            <span class="emoji">👍</span>
+            <span class="emoji">👎</span>
+            <span class="emoji">👏</span>
+            <span class="emoji">🙌</span>
+            <span class="emoji">🤝</span>
+            <span class="emoji">👀</span>
+            <span class="emoji">❤️</span>
+            <span class="emoji">😁</span>
+            <span class="emoji">💔</span>
+            <span class="emoji">🔥</span>
+            <span class="emoji">🌈</span>
+            <span class="emoji">🎉</span>
+            <!-- Add as many emojis as you like -->
+        </div>
+
+        <!-- Emoji Button -->
+        <div style="text-align: left; padding-left: 10px; padding-bottom: 10px;">
+            <span id="emoji-button" style="cursor: pointer;">😀</span>
+        </div>
+
+
+        <form id="message-form" method="post">
+            {% csrf_token %}
+            <textarea id="message" name="message" rows="3" placeholder="Type your message here..." required></textarea>
+            <input type="submit" value="Send">
+        </form>
+    </div>
+</div>
+
+
+
+
+<script>
+    let holdTimer;
+    const emojiPicker = document.getElementById('emoji-picker');
+
+    function showEmojiPicker(event, messageId) {
+        event.preventDefault();
+        clearTimeout(holdTimer);
+        emojiPicker.style.display = 'block';
+        emojiPicker.style.top = `${event.clientY}px`;
+        emojiPicker.style.left = `${event.clientX}px`;
+        
+        // Add functionality to handle emoji selection here
+        // For example, you can attach event listeners to emoji spans
+        // and then send the selected emoji to the server
+    }
+
+    function hideEmojiPicker() {
+        emojiPicker.style.display = 'none';
+    }
+
+    document.addEventListener('click', function(event) {
+        // If the clicked element is not the emoji picker and is not a child of the emoji picker
+        if (event.target !== emojiPicker && !emojiPicker.contains(event.target)) {
+            hideEmojiPicker();
+        }
+    });
+
+    // Assuming you're correctly populating the recipient's ID in the template
+    const recipientId = "{{ recipient.id }}";
+    const senderId = "{{ request.user.id }}";
+    const chatSocket = new WebSocket(
+        `ws://${window.location.host}/ws/chat/${senderId}/${recipientId}/`
+    );
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        const messagesDiv = document.querySelector('#chat-log');
+        const messageElement = document.createElement('div');
+        
+        messageElement.classList.add(data.sender === senderId.toString() ? 'sent' : 'received');
+        messageElement.innerHTML = `<p>${data.message}</p><small>Now</small>`;
+        messagesDiv.appendChild(messageElement);
+        // Scroll to the bottom of the chat log every time a new message is added
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    };
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
+
+    document.querySelector('#message-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const messageInputDom = document.querySelector('#message');
+        const message = messageInputDom.value;
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'sender': senderId
+        }));
+        messageInputDom.value = '';
+    });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const emojiButton = document.getElementById('emoji-button');
+    const emojiPicker = document.getElementById('emoji-picker');
+
+    // Function to toggle the display of the emoji picker
+    function toggleEmojiPicker() {
+        const isDisplayed = emojiPicker.style.display === 'grid';
+        if (!isDisplayed) {
+            const buttonRect = emojiButton.getBoundingClientRect();
+            const pickerHeight = emojiPicker.offsetHeight;
+            const pickerWidth = emojiPicker.offsetWidth;
+            
+            let topPosition = buttonRect.top - pickerHeight;
+            if (topPosition < window.scrollY) {
+                topPosition = buttonRect.bottom;
+            }
+
+            let leftPosition = buttonRect.left + (buttonRect.width / 2) - (pickerWidth / 2);
+            if (leftPosition < 0) {
+                leftPosition = 0;
+            } else if (leftPosition + pickerWidth > window.innerWidth) {
+                leftPosition = window.innerWidth - pickerWidth;
+            }            
+            emojiPicker.style.top = `${topPosition}px`;
+            emojiPicker.style.left = `${leftPosition}px`;
+            emojiPicker.style.display = 'grid'; // Keep it as 'grid'
+            emojiPicker.style.position = 'absolute'; // You might not need to reset this every time
+            emojiPicker.style.gridTemplateColumns = 'repeat(7, 1fr)'; // Ensure there are 7 columns
+        } else {
+            emojiPicker.style.display = 'none';
+        }
+    }
+
+    emojiButton.addEventListener('click', (event) => {
+        event.stopPropagation(); // Prevent the click from hiding the picker immediately
+        toggleEmojiPicker();
+    });
+
+    document.querySelectorAll('.emoji').forEach(emoji => {
+        emoji.addEventListener('click', function(event) {
+            const textArea = document.getElementById('message');
+            textArea.value += event.target.textContent; // Append selected emoji
+            emojiPicker.style.display = 'none'; // Hide picker after selection
+        });
+    });
+
+    // Hide the emoji picker if clicking outside of it
+    document.addEventListener('click', () => {
+        if (emojiPicker.style.display === 'flex') {
+            emojiPicker.style.display = 'none';
+        }
+    });
+
+    // Prevent the picker from hiding when clicking inside it
+    emojiPicker.addEventListener('click', (event) => {
+        event.stopPropagation();
+    });
+});
+
+</script>
+
+
+
+{% endblock %}
