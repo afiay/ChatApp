@@ -96,9 +96,8 @@ We use SemVer for versioning. For the versions available, see the tags on this r
 
 ## Authors
 
-- Your Name - Initial work - YourUsername
+- Afi Ayoub - Initial work - Afiay
 
-See also the list of contributors who participated in this project.
 
 ## License
 
