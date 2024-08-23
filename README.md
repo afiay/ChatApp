@@ -100,8 +100,3 @@ We use SemVer for versioning. For the versions available, see the tags on this r
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
-
-- Hat tip to anyone whose code was used
-- Inspiration
-- etc
